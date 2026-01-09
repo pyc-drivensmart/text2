@@ -1,0 +1,41 @@
+﻿生成启动时间为 2022/10/9 16:20:57。
+     1>项目“F:\2022-05-23 c200S pro\F1C100S_LCD_1024x600_interface\Driver\Include\bintotxt\bintotxt\bintotxt.vcxproj”在节点 2 上(build 个目标)。
+     1>InitializeBuildStatus:
+         正在创建“Debug\_MCU_DSP二进制文件转换成可用数据.unsuccessfulbuild”，因为已指定“AlwaysCreate”。
+       ClCompile:
+         所有输出均为最新。
+         C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Yu"StdAfx.h" /Fp"Debug\_MCU_DSP二进制文件转换成可用数据.pch" /Fo"Debug\\" /Fd"Debug\vc100.pdb" /Gd /TP /analyze- /errorReport:prompt bintotxt.cpp
+         bintotxt.cpp
+     1>f:\2022-05-23 c200s pro\f1c100s_lcd_1024x600_interface\driver\include\bintotxt\bintotxt\bintotxt.cpp(45): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\program files (x86)\microsoft visual studio 10.0\vc\include\stdio.h(234) : 参见“fopen”的声明
+     1>f:\2022-05-23 c200s pro\f1c100s_lcd_1024x600_interface\driver\include\bintotxt\bintotxt\bintotxt.cpp(46): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\program files (x86)\microsoft visual studio 10.0\vc\include\stdio.h(234) : 参见“fopen”的声明
+     1>f:\2022-05-23 c200s pro\f1c100s_lcd_1024x600_interface\driver\include\bintotxt\bintotxt\bintotxt.cpp(85): warning C4129: “D”: 不可识别的字符转义序列
+     1>f:\2022-05-23 c200s pro\f1c100s_lcd_1024x600_interface\driver\include\bintotxt\bintotxt\bintotxt.cpp(93): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\program files (x86)\microsoft visual studio 10.0\vc\include\stdio.h(234) : 参见“fopen”的声明
+     1>f:\2022-05-23 c200s pro\f1c100s_lcd_1024x600_interface\driver\include\bintotxt\bintotxt\bintotxt.cpp(94): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\program files (x86)\microsoft visual studio 10.0\vc\include\stdio.h(234) : 参见“fopen”的声明
+     1>f:\2022-05-23 c200s pro\f1c100s_lcd_1024x600_interface\driver\include\bintotxt\bintotxt\bintotxt.cpp(134): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\program files (x86)\microsoft visual studio 10.0\vc\include\stdio.h(234) : 参见“fopen”的声明
+     1>f:\2022-05-23 c200s pro\f1c100s_lcd_1024x600_interface\driver\include\bintotxt\bintotxt\bintotxt.cpp(135): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\program files (x86)\microsoft visual studio 10.0\vc\include\stdio.h(234) : 参见“fopen”的声明
+       ManifestResourceCompile:
+         所有输出均为最新。
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"F:\2022-05-23 c200S pro\F1C100S_LCD_1024x600_interface\Driver\Include\bintotxt\Debug\_MCU_DSP二进制文件转换成可用数据.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /ManifestFile:"Debug\_MCU_DSP二进制文件转换成可用数据.exe.intermediate.manifest" /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /DEBUG /PDB:"F:\2022-05-23 c200S pro\F1C100S_LCD_1024x600_interface\Driver\Include\bintotxt\Debug\_MCU_DSP二进制文件转换成可用数据.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"F:\2022-05-23 c200S pro\F1C100S_LCD_1024x600_interface\Driver\Include\bintotxt\Debug\_MCU_DSP二进制文件转换成可用数据.lib" /MACHINE:X86 "Debug\_MCU_DSP二进制文件转换成可用数据.exe.embed.manifest.res"
+         Debug\bintotxt.obj
+         Debug\stdafx.obj
+       Manifest:
+         C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\bin\mt.exe /nologo /verbose /out:"Debug\_MCU_DSP二进制文件转换成可用数据.exe.embed.manifest" /manifest "Debug\_MCU_DSP二进制文件转换成可用数据.exe.intermediate.manifest"
+         所有输出均为最新。
+       LinkEmbedManifest:
+         所有输出均为最新。
+         bintotxt.vcxproj -> F:\2022-05-23 c200S pro\F1C100S_LCD_1024x600_interface\Driver\Include\bintotxt\Debug\_MCU_DSP二进制文件转换成可用数据.exe
+       FinalizeBuildStatus:
+         正在删除文件“Debug\_MCU_DSP二进制文件转换成可用数据.unsuccessfulbuild”。
+         正在对“Debug\_MCU_DSP二进制文件转换成可用数据.lastbuildstate”执行 Touch 任务。
+     1>已完成生成项目“F:\2022-05-23 c200S pro\F1C100S_LCD_1024x600_interface\Driver\Include\bintotxt\bintotxt\bintotxt.vcxproj”(build 个目标)的操作。
+
+生成成功。
+
+已用时间 00:00:00.97

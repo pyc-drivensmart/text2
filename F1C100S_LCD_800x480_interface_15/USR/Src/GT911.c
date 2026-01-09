@@ -1,0 +1,946 @@
+
+#include "includes.h"
+
+
+#define GT911_READ_XY_REG 0x814E	/* 坐标寄存器 */
+#define GT911_CLEARBUF_REG 0x814E	/* 清除坐标寄存器 */
+#define GT911_CONFIG_REG	0x8047	/* 配置参数寄存器 */
+#define GT911_COMMAND_REG 0x8040 /* 实时命令 */
+#define GT911_PRODUCT_ID_REG 0x8140 /*productid*/
+#define GT911_VENDOR_ID_REG 0x814A /* 当前模组选项信息 */
+#define GT911_CONFIG_VERSION_REG 0x8047 /* 配置文件版本号 */
+#define GT911_CONFIG_CHECKSUM_REG 0x80FF /* 配置文件校验码 */
+#define GT911_FIRMWARE_VERSION_REG 0x8144 /* 固件版本号 */
+
+
+/*GT911 的从设备地址有两组可选，两组地址分别为：0xBA/0xBB和0x28/0x29*/
+#define GT911_I2C_ADDR	0xBA
+/*GT911 重定义延时函数*/
+#define  bsp_DelayMS(x) delay_ms(x)
+
+
+/* GT911单个触点配置参数，一次性写入 */
+unsigned char  s_GT911_CfgParams_800x480_5[186]=
+{ 
+	0X60,0X20,0X03,0XE0,0X01,0X05,0X3d,0X00,0X02,0X08,
+	0X1E,0X08,0X50,0X3C,0X0F,0X05,0X00,0X00,0XFF,0X67,
+	0X50,0X00,0X00,0X18,0X1A,0X1E,0X14,0X89,0X28,0X0A,
+	0X30,0X2E,0XBB,0X0A,0X03,0X00,0X00,0X02,0X33,0X1D,
+	0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X32,0X00,0X00,
+	0X2A,0X1C,0X5A,0X94,0XC5,0X02,0X07,0X00,0X00,0X00,
+	0XB5,0X1F,0X00,0X90,0X28,0X00,0X77,0X32,0X00,0X62,
+	0X3F,0X00,0X52,0X50,0X00,0X52,0X00,0X00,0X00,0X00,
+	0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,
+	0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X0F,
+	0X0F,0X03,0X06,0X10,0X42,0XF8,0X0F,0X14,0X00,0X00,
+	0X00,0X00,0X1A,0X18,0X16,0X14,0X12,0X10,0X0E,0X0C,
+	0X0A,0X08,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,
+	0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,
+	0X00,0X00,0X29,0X28,0X24,0X22,0X20,0X1F,0X1E,0X1D,
+	0X0E,0X0C,0X0A,0X08,0X06,0X05,0X04,0X02,0X00,0XFF,	
+	0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,
+	0X00,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,
+	0XFF,0XFF,0XFF,0XFF,0   ,0
+};
+//4.3寸 800x480配置表
+unsigned char  s_GT911_CfgParams_800x480_43[186]=
+{
+	0x42,0x20,0x03,0xE0,0x01,0x05,0x3D,0x00,0x02,0x08,0x28,0x08,0x64,0x46,0x03,0x05,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x18,0x1A,0x1E,0x14,0x89,0x2A,0x09,0xC8,0xCA,0x40,0x04,0x00,0x00,0x00,0x61,0x02,0x1D,0x00,0x01,0x00,0x00,
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xA0,0xFA,0x94,0xD5,0xF4,0x07,0x00,0x00,0x04,0x86,0xA7,0x00,0x82,0xB7,0x00,
+	0x80,0xC8,0x00,0x7D,0xDA,0x00,0x7C,0xEF,0x00,0x7C,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x00,0x02,0x04,0x06,0x08,0x0A,0x0C,0x10,0x12,0x14,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x02,0x04,0x06,0x08,0x0A,0x0F,0x10,0x12,0x16,0x18,0x1C,
+	0x1D,0x1E,0x1F,0x20,0x21,0x22,0x24,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x54,0x01
+};
+
+//4.3寸 480x272配置表
+unsigned char  s_GT911_CfgParams_480x272_43[186]=
+{
+	0x42,0xE0,0x01,0x10,0x01,0x0A,0x3D,0x00,0x02,0x08,0x28,0x08,0x64,0x46,0x03,0x05,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x18,0x1A,0x1E,0x14,0x89,0x2A,0x09,0xC8,0xCA,0x40,0x04,0x00,0x00,0x00,0x61,0x02,0x1D,0x00,0x01,0x00,0x00,
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xA0,0xFA,0x94,0xD5,0xF4,0x07,0x00,0x00,0x04,0x86,0xA7,0x00,0x82,0xB7,0x00,
+	0x80,0xC8,0x00,0x7D,0xDA,0x00,0x7C,0xEF,0x00,0x7C,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x00,0x02,0x04,0x06,0x08,0x0A,0x0C,0x10,0x12,0x14,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x02,0x04,0x06,0x08,0x0A,0x0F,0x10,0x12,0x16,0x18,0x1C,
+	0x1D,0x1E,0x1F,0x20,0x21,0x22,0x24,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x66,0x01
+};
+//7寸 1024x600配置表
+unsigned char  s_GT911_CfgParams_1024x600_4[186]=
+{
+  0x63,0x00,0x04,0x58,0x02,0x0A,0x0D,0x00,0x01,0x08,0x28,0x05,0x50,0x32,0x03,0x05,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x00,0x00,0x00,0x00,0x87,0x28,0x0A,0x17,0x15,0x31,0x0D,0x00,0x00,0x04,0xBA,0x04,0x25,0x00,0x00,0x00,0x00,
+	0x00,0x03,0x00,0x00,0x00,0x00,0x00,0x11,0x25,0x94,0xD5,0x02,0x07,0x00,0x00,0x04,0x98,0x12,0x00,0x89,0x15,0x00,
+	0x7A,0x19,0x00,0x6F,0x1D,0x00,0x65,0x22,0x00,0x65,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x00,0x14,0x12,0x10,0x0E,0x0C,0x0A,0x08,0x06,0x04,0x02,0xFF,0xFF,0xFF,0xFF,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x26,0x24,0x22,0x21,0x20,0x1F,0x1E,0x1D,0x0C,0x0A,0x08,0x06,
+	0x04,0x02,0x00,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xCC,0x01
+};
+
+unsigned char  s_GT911_CfgParams_1024x600_34[186]=
+{
+
+	#ifdef LCD_SIZE_10CH_TOUCH
+	
+	0X60,/*0XE0,0X01,0X20,0X03,*/0x00,0x04,0x58,0x02,0X05,0X3D,0X00,//8047
+	0X02,0X08,0X1E,0X08,0X50,0X3D,0X0F,0X05,
+	0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X18,//8057
+	0X1A,0X1E,0X14,0X8A,0X2A,0X0C,0X30,0X2E,
+	0XBB,0X0A,0X03,0X00,0X00,0X02,0X33,0X1D,//8067
+	0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X32,
+	0X00,0X00,0X2A,0X1C,0X5A,0X94,0XC5,0X02,//8077
+	0X07,0X00,0X00,0X00,0XB5,0X1F,0X00,0X90,
+	0X28,0X00,0X77,0X32,0X00,0X62,0X3F,0X00,//8087
+	0X52,0X50,0X00,0X52,0X00,0X00,0X00,0X00,
+	0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,//8097
+	0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,
+	0X00,0X00,0X00,0X0F,0X0F,0X03,0X06,0X10,//80a7
+	0X42,0XF8,0X0F,0X14,0X00,0X00,0X00,0X00,
+	
+	0X1A,0X18,0X16,0X14,0X12,0X10,0X0E,0X0C,//80b7 //Sensor_CH0
+  0X0A,0X08,0X06,0X04,0X02,0X00,0X00,0X00,
+
+	0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,//80c7
+	0X00,0X00,0X00,0X00,0X00,0X00,0X29,0X28,
+  0X24,0X22,0X20,0X1F,0X1E,0X1D,0x1a,0x18,0x14,0x12,0X0E,0X0C,//80d7 //Driver_CH2
+  0X0A,0X08,0X06,0X05,0X04,0X02,0X00,0XFF,
+	0XFF,0X00,0X00,0X00,//80e7
+	0X00,0X00,0X00,0XFF,0XFF,0XFF,0XFF,0XFF,
+	0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,//80F7
+	0   ,1
+	#if 0
+	0X60,/*0XE0,0X01,0X20,0X03,*/0x00,0x04,0x58,0x02,0X05,0X3D,0X00,//8047
+	0X02,0X08,0X1E,0X08,0X50,0X3D,0X0F,0X05,
+	0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X18,//8057
+	0X1A,0X1E,0X14,0X8a,0X2a,0X0D,0X30,0X2E,
+	0XBB,0X0A,0X03,0X00,0X00,0X02,0X33,0X1D,//8067	
+	0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X32,
+	0X00,0X00,0X2A,0X1C,0X5A,0X94,0XC5,0X02,//8077
+	0X07,0X00,0X00,0X00,0XB5,0X1F,0X00,0X90,
+	0X28,0X00,0X77,0X32,0X00,0X62,0X3F,0X00,//8087
+	0X52,0X50,0X00,0X52,0X00,0X00,0X00,0X00,
+	0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,//8097
+	0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,
+	0X00,0X00,0X00,0X0F,0X0F,0X03,0X06,0X10,//80a7
+	0X42,0XF8,0X0F,0X14,0X00,0X00,0X00,0X00,
+	
+	0X1A,0X18,0X16,0X14,0X12,0X10,0X0E,0X0C,//80b7 //Sensor_CH0
+  0X0A,0X08,0X06,0X04,0X02,0X00,0X00,0X00,
+
+	0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,//80c7
+	0X00,0X00,0X00,0X00,0X00,0X00,    
+  /*0X29,0X28,
+  0X24,0X22,0X20,0X1F,0X1E,0X1D,0X0E,0X0C,
+   0X0A,0X08,0X06,0X05,0X04,0X02,0X00,0XFF,
+	 0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,*/
+	                                           //80d7 //Driver_CH2
+		0x30,0X29,0X28,
+  0X26,0X24,0X22,0X20,0x1f,0X1E,0X1d,0x1a,0x18,
+	0x16,0x14,0x12,0x10,0X0E,0X0C,0X0A,0X08,
+	0X06,0x05,0X04,0X02,0X00,0XFF,           //80e7
+	/*25,24,
+  23,22,21,20,19,18,17,16,
+	15,14,13,12,11,
+  10,9,8,7,6,5,4,
+	3,2,1,0x00,  */    
+	0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,
+	0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,//80F7
+	0   ,1
+	#endif
+	#else
+	
+	0x63,0x00,0x04,0x58,0x02,0x05,0x3D,0x00,0x03,0x1B,0x28,0x0F,0x55,0x3C,0x03,0x05,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x16,0x18,0x1C,0x14,0x88,0x29,0x0A,0x23,0x20,0x05,0x0D,0x00,0x00,0x01,0x83,0x02,0x2D,0x00,0x01,0x00,0x00,
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x19,0x5A,0x94,0xC5,0x02,0x07,0x00,0x00,0x04,0x91,0x1C,0x00,0x6F,0x25,0x00,
+	0x58,0x2F,0x00,0x45,0x3D,0x00,0x36,0x4F,0x00,0x36,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x00,0x02,0x04,0x06,0x08,0x0A,0x0C,0x0E,0x10,0x12,0x14,0xFF,0xFF,0xFF,0xFF,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x02,0x04,0x06,0x08,0x0F,0x10,0x12,0x16,0x18,0x1C,0x1D,
+	0x1E,0x1F,0x20,0x21,0x22,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x62,0x01
+	
+	
+#endif
+  /*0x50,0x00,0x04,0x58,0x02,0x05,0x3D,0x00,//8047lo
+	0x01,0x0A,0x28,0x0F,0x5A,0x3C,0x03,0x05,
+	0x00,0x00,0x00,0x00,0x00,0x00,0x08,0x17,//8057
+	0x19,0x1C,0x14,0x87,0x29,0x0A,0x4E,0x50,
+	0xEB,0x04,0x00,0x00,0x00,0x00,0x02,0x10,//8067
+	0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x00,0x00,0x46,0x64,0x94,0xC5,0x02,//8077
+	0x07,0x00,0x00,0x04,0x9E,0x48,0x00,0x8D,
+	0x4D,0x00,0x7F,0x53,0x00,0x73,0x59,0x00,//8087
+	0x67,0x60,0x00,0x67,0x00,0x00,0x00,0x00,
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,//8097
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,//80a7
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x02,0x04,0x06,0x08,0x0A,0x0C,0x0E,0x10,//80b7  //Sensor_CH0
+	0x12,0x14,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+	0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,//80c7
+	0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0x02,
+	0x04,0x06,0x08,0x0A,0x0C,0x1D,0x1E,0x1F,//80d7 Driver_CH2
+	0x20,0x21,0x22,0x24,0x26,0x28,0xFF,0xFF,
+	0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,//80e7
+	0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+	0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,//80f7
+	0x69,0x01*/
+	
+/*0x48,0xD0,0x02,0x00,0x05,0x05,0x34,0x00,0x01,0x8C,\
+    0x1E,0x0C,0x50,0x3C,0x03,0x07,0x01,0x01,0xFF,0xFF,\
+    0x00,0x00,0x00,0x18,0x1A,0x1E,0x14,0x8B,0x2B,0x0C,\
+    0x50,0x52,0xD6,0x09,0x03,0x00,0x00,0x9C,0x32,0x1D,\
+    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,\
+    0xF4,0x4A,0x64,0x9E,0xE5,0x01,0x14,0x00,0x00,0x04,\
+    0x74,0x4C,0x00,0x70,0x50,0x00,0x69,0x55,0x00,0x63,\
+    0x5B,0x00,0x5E,0x61,0x00,0x5E,0x00,0x00,0x00,0x00,\
+    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,\
+    0x00,0x01,0x1B,0x14,0x0D,0x14,0x03,0x0F,0x0A,0x0F,\
+    0x0F,0x03,0x07,0x10,0x42,0x86,0x0E,0x05,0x00,0x00,\
+    0x00,0x50,0x02,0x04,0x06,0x08,0x0A,0x0C,0x0E,0x10,\
+    0x12,0x14,0x16,0x18,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,\
+    0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,\
+    0xFF,0xFF,0x00,0x01,0x02,0x04,0x06,0x07,0x08,0x09,\
+    0x0A,0x0C,0x0E,0x1D,0x1E,0x1F,0x20,0x22,0x24,0x25,\
+    0x26,0x28,0x29,0x2A,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,\
+    0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,\
+    0xFF,0xFF,0xFF,0xFF,0x5A,0x01,\*/
+		//0x48 ,0xD0 ,0x02 ,0x00 ,0x05 ,0x05 ,0x75 ,0x01 ,0x01 ,0x0F ,0x24 ,0x0F ,0x64 ,0x3C ,0x03 ,0x05 ,0x00 ,0x00 ,0x00 ,0x02 ,0x00 ,0x00 ,0x00 ,0x16 ,0x19 ,0x1C ,0x14 ,0x8C ,0x0E ,0x0E ,0x24 ,0x00 ,0x31 ,0x0D ,0x00 ,0x00 ,0x00 ,0x83 ,0x33 ,0x1D ,0x00 ,0x41 ,0x00 ,0x00 ,0x3C ,0x0A ,0x14 ,0x08 ,0x0A ,0x00 ,0x2B ,0x1C ,0x3C ,0x94 ,0xD5 ,0x03 ,0x08 ,0x00 ,0x00 ,0x04 ,0x93 ,0x1E ,0x00 ,0x82 ,0x23 ,0x00 ,0x74 ,0x29 ,0x00 ,0x69 ,0x2F ,0x00 ,0x5F ,0x37 ,0x00 ,0x5F ,0x20 ,0x40 ,0x60 ,0x00 ,0xF0 ,0x40 ,0x30 ,0x55 ,0x50 ,0x27 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x14 ,0x19 ,0x00 ,0x00 ,0x50 ,0x50 ,0x02 ,0x04 ,0x06 ,0x08 ,0x0A ,0x0C ,0x0E ,0x10 ,0x12 ,0x14 ,0x16 ,0x18 ,0x1A ,0x1C ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x1D ,0x1E ,0x1F ,0x20 ,0x21 ,0x22 ,0x24 ,0x26 ,0x28 ,0x29 ,0x2A ,0x1C ,0x18 ,0x16 ,0x14 ,0x13 ,0x12 ,0x10 ,0x0F ,0x0C ,0x0A ,0x08 ,0x06 ,0x04 ,0x02 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x3C ,0x01
+};
+#define TP5_800x480
+#ifdef TP5_800x480
+	#define s_GT911_CfgParams s_GT911_CfgParams_800x480_5
+#endif
+/*
+#define TP43_800x480
+#ifdef TP43_800x480
+	#define s_GT911_CfgParams s_GT911_CfgParams_800x480_43
+#endif
+
+#ifdef TP43_480x272
+	#define s_GT911_CfgParams s_GT911_CfgParams_480x272_43
+#endif
+*/
+
+//GT911配置信息，共184个寄存器value
+#if 0
+const uint8_t CTP_CFG_GT911[] =  {
+  0x41,//         版本号，寄存器地址 0x8047
+  GTP_SET_WIDTH_L_Byte,   // LCD 屏 显示宽度(x) 低8bit，寄存器地址 0x8048
+  GTP_SET_WIDTH_H_Byte,   // LCD 屏 显示宽度(x)  高8bit，寄存器地址 0x8049
+  GTP_SET_HEIGHT_L_Byte,     // LCD 屏 显示高度(y) 低8bit，寄存器地址 0x804A
+  GTP_SET_HEIGHT_H_Byte,     // LCD 屏 显示高度(y) 高8bit，寄存器地址 0x804B
+  
+  
+  0x05,                     // 输出触点个数上限： 1~10，目前设置为 5 个，寄存器地址 0x804C
+  0x3D,                     /* 寄存器地址 0x804D    0x3d
+                               bit 7:6   Stylus_priority  (预定义)
+                               bit 5:4   Stretch_rank
+                               bit 3   X2Y   (X,Y 坐标交换)
+                               bit 2   Sito  (软件降噪)
+                               bit 1:0  INT 触发方式   定义如下：
+
+                                    00：上升沿触发
+                                    01：下降沿触发   默认设置为下降沿触发
+                                    02：低电平查询
+                                    03：高电平查询
+                            */
+                            
+  0x00,                   // 寄存器地址 0x804E   触摸按键不使用  
+  0x03,                   // 寄存器地址 0x804F   手指按下/松开去抖次数
+  0x48,                   // 寄存器地址 0x8050   First_Filter   Normal_Filter(原始坐标窗口滤波值,系数为 1）
+  
+	
+  0x28,        //0x8051        大面积触点个数
+  0x0D,//0x8052        噪声消除值
+  0x50,        //0x8053        屏上触摸点从无到有的阈值  0x5a   0x50
+  0x32,//0x8054        屏上触摸点从有到无的阈值    0x46   0x32
+  0x03,//0x8055        进低功耗时间        s
+  0x05,        //0x8056
+  
+	
+	
+  //坐标上报率
+  0x00,//0x8057        X坐标输出门上限
+  0x00,//0x8058        Y坐标输出门上限
+  0x00,//0x8059        reserved
+  0x00,//0x805a        reserved
+
+// 这个地方 我设置的都是为 0 
+  0x00,         // 寄存器地址 0x805B   bit7~4   上边框的空白区（以 32 为系数）
+                //                     bit3~0   下边框的空白区（以 32 为系数）
+  0x00,         // 寄存器地址 0x805C   bit7~4   左边框的空白区（以 32 为系数）
+                //                     bit3~0   右边框的空白区（以 32 为系数）
+  
+  
+	
+  0x00,     //0x805d        划线过程中小filter设置
+  0x18,     //0x805e        拉伸区间        1        系数
+  0x1A,    //0x805f        拉伸区间        2        系数
+  0x1E,        //0x8060        拉伸区间        3        系数
+  0x14,//0x8061        各拉伸区间基数
+  0x8A,0x2A,0x0C,
+  0x30,//0x8065        驱动组A的驱动频率倍频系数   0x71
+  0x38,//0x8066        驱动组B的驱动频率倍频系数   0x73
+	
+	
+  0x31,//0x8067        驱动组A、B的基频           0xb2
+  0x0D,//0x8068                           0x04
+  0x00,        //0x8069        相邻两次驱动信号输出时间间隔
+  0x00,0x02,0xB9,0x03,0x2D,
+  0x00,0x00,
+	
+	0x00,0x00,0x00,0x03,0x64,0x32,0x00,0x00,0x00,0x1D,
+	
+	
+	0x41,0x94,0xC5,0x02,0x07,0x00,0x00,0x04,0xA5,0x1F,//8077
+	0x00,0x94,0x25,0x00,0x88,0x2B,0x00,0x7D,0x33,0x00,
+	0x74,0x3C,0x00,0x74,0x00,0x00,0x00,0x00,0x00,0x00, //8087
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,//8097  
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+	
+	
+	
+	0x18,0x16,0x14,0x12,0x10,0x0E,0x0C,0x0A,0x08,0x06,//80b7 //Sensor_CH0
+	0x04,0x02,0xFF,0xFF,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,//80d7  
+	0x24,0x22,0x21,0x20,0x1F,0x1E,0x1D,0x1C,0x18,0x16,
+	0x13,0x12,0x10,0x0F,0x0A,0x08,0x06,0x04,0x02,0x00,//80e7
+	0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0x00,0x00,0x00,
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,//80f7
+	0x00,0x00
+};
+#endif
+
+
+
+
+
+
+
+//#define s_GT911_CfgParams s_GT911_CfgParams_1024x600_34
+GT911_T g_GT911;
+
+/**********************************************************************************************************
+*	函 数 名: GT911_INT_GPIO_Input_Init
+*	功能说明: 初始化RST引脚为推挽输出，INT引脚为开漏输出
+*	形 参: 无
+*	返 回 值: 无
+**********************************************************************************************************/
+void GT911_RST_INT_GPIO_Init(void)
+{
+	GPIO_Congif(GPIOA,GPIO_Pin_3,GPIO_Mode_OUT,GPIO_PuPd_NOPULL);//RST
+	GPIO_Congif(GPIOA,GPIO_Pin_1,GPIO_Mode_OUT,GPIO_PuPd_NOPULL);//INT	
+	GT911_RST_1();
+	GT911_INT_1();
+}
+
+/**********************************************************************************************************
+*	函 数 名: GT911_INT_GPIO_Input_Init
+*	功能说明: 设定INT引脚为输入悬空
+*	形 参: 无
+*	返 回 值: 无
+**********************************************************************************************************/
+void GT911_INT_GPIO_Input_Init(void)
+{
+	SET_GT911_INT_in();//INT
+}
+
+/**********************************************************************************************************
+*	函 数 名: GT911_Reset_Sequence
+*	功能说明: G911硬复位操作,RST为低电平时，INT持续为低电平，1ms后RST置为高电平，10ms后INT设置为输入，
+*	使GT911地址设定为0xBA/0xBB。
+*	形 参: 无
+*	返 回 值: 无
+**********************************************************************************************************/
+
+void GT911_Reset_Sequence(unsigned char  ucAddr)
+{
+GT911_RST_INT_GPIO_Init();
+	switch(ucAddr)
+	{
+		case 0xBA:
+			GT911_RST_0(); //RST引脚低电平
+			GT911_INT_0(); //INT引脚低电平
+			bsp_DelayMS(30); //延时30ms，最短1
+			GT911_RST_1(); //RST引脚高电平
+			GT911_INT_0(); //INT引脚低电平
+			bsp_DelayMS(30); //延时30ms，最短20
+			GT911_INT_0();
+			bsp_DelayMS(30); //延时30ms，最短20
+			GT911_INT_1();
+		break;
+		
+		case 0x28:
+			GT911_RST_0(); //RST引脚低电平
+			GT911_INT_1(); //INT引脚高电平
+			bsp_DelayMS(30); //延时30ms，最短1
+			GT911_RST_1(); //RST引脚高电平
+			GT911_INT_1(); //INT引脚高电平
+			bsp_DelayMS(30); //延时30ms，最短20
+			GT911_INT_0();
+			bsp_DelayMS(30); //延时30ms，最短20
+			GT911_INT_1();
+		break;
+		
+		default: //缺省为0xBA
+			GT911_RST_0(); //RST引脚低电平
+			GT911_INT_0(); //INT引脚低电平
+			bsp_DelayMS(30); //延时30ms，最短1
+			GT911_RST_1(); //RST引脚高电平
+			GT911_INT_0(); //INT引脚低电平
+			bsp_DelayMS(30); //延时30ms，最短20
+			GT911_INT_0();
+			bsp_DelayMS(30); //延时30ms，最短20
+			GT911_INT_1();
+		break;
+
+	}
+}
+
+/**********************************************************************************************************
+*	函 数 名: GT911_Soft_Reset
+*	功能说明: G911软复位操作。
+*	形 参: 无
+*	返 回 值: 无
+**********************************************************************************************************/
+void GT911_Soft_Reset(void)
+{
+//	unsigned char  buf[1];
+
+//	buf[0] = 0x04;
+//	GT911_WriteReg(GT911_COMMAND_REG, buf, 1);
+//	bsp_DelayMS(500);
+//	
+//	buf[0] = 0x01;
+//	GT911_WriteReg(GT911_COMMAND_REG, buf, 1);	
+//	bsp_DelayMS(500);
+//	
+}
+
+/**********************************************************************************************************
+*	函 数 名: GT911_ReadStatue
+*	功能说明: G911读产品ID与配置参数版本号。
+*	形 参: 无
+*	返 回 值: 配置参数版本号
+**********************************************************************************************************/
+unsigned char  GT911_ReadStatue(void)
+{
+	unsigned char  buf[4];
+	GT911_ReadReg(GT911_PRODUCT_ID_REG, (unsigned char  *)&buf[0], 3);
+	GT911_ReadReg(GT911_CONFIG_VERSION_REG, (unsigned char  *)&buf[3], 1);
+	sysprintf("TouchPad_ID:%c,%c,%c\r\nTouchPad_Config_Version:%2x\r\n",buf[0],buf[1],buf[2],buf[3]);
+	return buf[3];
+}
+
+/**********************************************************************************************************
+*	函 数 名: GT911_Exti_Int
+*	功能说明: G911中断引脚初始化。
+*	形 参: 无
+*	返 回 值: 配置参数版本号
+**********************************************************************************************************/
+void GT911_Exti_Int(void)
+{
+
+}
+
+/**********************************************************************************************************
+*	函 数 名: GT911_InitHard
+*	功能说明: 配置触摸芯片.
+*	形 参: 无
+*	返 回 值: 无
+**********************************************************************************************************/
+void GT911_InitHard(void)
+{
+unsigned char  config_Checksum = 0,i;
+//unsigned char  rd[186];	
+
+g_GT911.i2c_addr = GT911_I2C_ADDR;
+GT911_Reset_Sequence(g_GT911.i2c_addr);
+
+/*复位GT911，设定设备地址为0xBA/0xBB*/
+GT911_Soft_Reset(); /*软复位*/
+
+/*读取配置文件版本，计算校验和*/
+s_GT911_CfgParams[0] = GT911_ReadStatue();
+
+for(i=0;i<sizeof(s_GT911_CfgParams)-2;i++)
+{
+	config_Checksum += s_GT911_CfgParams[i];
+}
+s_GT911_CfgParams[184] = (~config_Checksum)+1;
+
+///* 发送配置信息参数 */
+//GT911_WriteReg(0x,s_GT911_CfgParams,0);
+//GT911_WriteReg(GT911_CONFIG_REG,s_GT911_CfgParams,186);
+//读并打印配置表
+
+//读并打印配置表
+//GT911_ReadReg(GT911_CONFIG_REG,rd,186);
+//for(i=0;i<186;i++)sysprintf("0x%02X,",rd[i]);
+//sysprintf("\r\n");
+
+GT911_INT_GPIO_Input_Init(); //设定INT引脚为输入悬空
+
+GT911_Soft_Reset(); /*软复位*/
+
+
+/*初始化校准，等待200ms*/
+bsp_DelayMS(200);
+g_GT911.Enable = 1;
+}
+
+/**********************************************************************************************************
+*	函 数 名: GT911_ReadFirmwareVersion
+*	功能说明: 获得GT911的芯片固件版本
+*	形 参: 无
+*	返 回 值: 16位版本号
+**********************************************************************************************************/
+unsigned short GT911_ReadFirmwareVersion(void)
+{
+unsigned char  buf[2];
+GT911_ReadReg(GT911_FIRMWARE_VERSION_REG, buf, 2);
+return ((unsigned short)buf[1] << 8) + buf[0];
+}
+
+/**********************************************************************************************************
+*	函 数 名: GT911_WriteReg
+*	功能说明: 写1个或连续的多个寄存器
+*	形 参: _usRegAddr : 寄存器地址
+*	_pRegBuf : 寄存器数据缓冲区
+*	_ucLen : 数据长度
+*	返 回 值: 1成功
+**********************************************************************************************************/
+int GT911_WriteReg(unsigned short _usRegAddr, unsigned char  *_pRegBuf, unsigned char  _ucLen)
+{
+  if(IO_IIC==1)
+		IO_write_byte(_usRegAddr,2,_pRegBuf,_ucLen);
+  else 
+		write_byte(TWI0,_usRegAddr,2,_pRegBuf,_ucLen);
+  
+ return 1;	
+}
+
+/**********************************************************************************************************
+*	函 数 名: GT911_ReadReg
+*	功能说明: 读1个或连续的多个寄存器
+*	形 参: _usRegAddr : 寄存器地址
+*	_pRegBuf : 寄存器数据缓冲区
+*	_ucLen : 数据长度
+*	返 回 值: 1成功
+**********************************************************************************************************/
+int GT911_ReadReg(unsigned short _usRegAddr, unsigned char  *_pRegBuf, unsigned char  _ucLen)
+{
+	if(IO_IIC==1)
+	  IO_read_byte(_usRegAddr,2,_pRegBuf,(u16)_ucLen);
+	else
+    read_byte(TWI0,_usRegAddr,2,_pRegBuf,_ucLen);
+ return 1;	
+}
+
+/**********************************************************************************************************
+*	函 数 名: GT911_OnePiontScan
+*	功能说明: 读取GT911触摸数据，这里仅读取一个触摸点。
+*	形 参: 无
+*	返 回 值: 无
+**********************************************************************************************************/
+//extern GUI_PID_STATE State;
+
+extern u8 item_big;//大项 左右键选择
+extern u8 item_small[3];//小项 音量键选择
+extern BOOL pic_Dis_Updata_item_big;//是否需要更新显示 显示1秒吧 理切到小项目
+extern BOOL pic_Dis_Updata_item_small;//是否需要更新显示
+extern BOOL pic_Dis_Updata_item_small_q;//是否需要更新显示
+extern u32 IdelTime;
+extern BOOL return_to_item_big ;
+extern void SetDelayTime(u32 *time,u32 t);//设置目标时间
+
+BOOL touch_up=FALSE;
+
+
+//不能小于 OFFSET_VAL_X  
+// 加OFFSET_VAL_X 不能大于最大值
+#define TOP_0_X  291
+#define TOP_0_Y  37
+
+#define TOP_1_X  579
+#define TOP_1_Y  37
+
+#define TOP_2_X  911
+#define TOP_2_Y  420
+
+#define SMALL_0_X  90
+#define SMALL_0_Y  140
+
+#define SMALL_1_X  90
+#define SMALL_1_Y  175
+
+#define SMALL_2_X  90
+#define SMALL_2_Y  210
+
+#define SMALL_3_X  90
+#define SMALL_3_Y  245
+
+#define RETURN_X  65
+#define RETURN_Y  30
+
+#define OFFSET_VAL_X 50
+#define OFFSET_VAL_Y 25
+
+extern bool RGB_touch_Flag;
+
+int GT911_OnePiontScan(void)
+{
+    unsigned char buf[9];
+    unsigned char touch_num;
+    
+    // 读取状态寄存器
+    if (GT911_ReadReg(GT911_READ_XY_REG, buf, 1) < 0)
+        return -1;
+    
+    touch_num = buf[0] & 0x0F;  // 获取实际触摸点数量
+    
+    if (touch_num == 0) {
+        // 没有触摸点
+        touch_up = TRUE;
+        page_touch_pro(0, 0);
+        buf[0] = 0;
+        GT911_WriteReg(GT911_CLEARBUF_REG, buf, 1);
+        return 1;
+    }
+    
+    // 只读取第一个触摸点（即使有多个点）
+    if (GT911_ReadReg(GT911_READ_XY_REG + 1, &buf[1], 7) < 0)
+        return -1;
+    
+    // 清除缓冲区
+    buf[0] = 0;
+    GT911_WriteReg(GT911_CLEARBUF_REG, buf, 1);
+    
+    // 处理第一个点
+    g_GT911.X1 = ((unsigned short)buf[3] << 8) + buf[2];
+    g_GT911.Y1 = ((unsigned short)buf[5] << 8) + buf[4];
+    
+    // 坐标转换和UI处理
+    page_touch_pro(g_GT911.X1, g_GT911.Y1);
+    touch_up = FALSE;
+    
+    HandleColorTouch();
+    return 0;
+}
+
+
+//int GT911_OnePiontScan(void)
+//{
+//	unsigned char  buf[9];
+////	static unsigned char  s_tp_down = 0;	
+
+//	buf[8] = 0;
+//	if (g_GT911.Enable == 0)  //若显示屏没使能成功 /没显示屏
+//	{
+//		return -1;
+//	}
+
+//	/* 读取寄存器：0x814E R Bufferstatus Large_Detect number of touch points */
+//	/* 判断是否按下，没有按下，直接退出 */
+//	if (GT911_ReadReg(GT911_READ_XY_REG, (unsigned char  *)buf, 8)<0)
+//	{
+//		sysprintf("I2C_Read_Error...\r\n");
+//		return -1;
+//	}
+//	//delay_ms(1);
+//	GT911_WriteReg(GT911_CLEARBUF_REG, (unsigned char  *)&buf[8], 1);
+//	//return -1;
+//	//sysprintf("GT911 Point [%d]...\r\n",(buf[0] & 0x0f));
+//	if ((buf[0] & 0x01) == 0)  //触摸弹起？
+//	{
+//		//	if (s_tp_down == 1)
+//		//	{
+//		//	/* State.x和State.y的数值无需更新，State是全局变量，保存的就是最近一次的数值 */
+//		//	s_tp_down = 0;
+//		//	State.Pressed = 0;
+//		//	GUI_PID_StoreState(&State);
+//		//	}
+//		//GT911_ReadReg(GT911_READ_XY_REG + 1, &buf[1], 7);
+//		
+//		touch_up = TRUE;   //这里给了个弹起的标志位，用于后面UI处理
+//		page_touch_pro(0,0);   //清掉坐标值
+//		//sysprintf("upupup\r\n"); //
+//		return 1;
+//	}
+//	
+//	/* 读取第一个触摸点1 */
+//	//GT911_ReadReg(GT911_READ_XY_REG + 1, &buf[1], 7);
+//	//GT911_WriteReg(GT911_CLEARBUF_REG, (unsigned char  *)&buf[8], 1);
+//	/*
+//	0x814E R/W Bufferstatus Large_Detect number of touch points
+//	0x814F R track id
+//	0x8150 R Point1Xl 触摸点 1，X 坐标低 8 位
+//	0x8151 R Point1Xh 触摸点 1，X 坐标高 8 位
+//	0x8152 R Point1Yl 触摸点 1，Y 坐标低 8 位
+//	0x8153 R Point1Yh 触摸点 1，Y 坐标高 8 位
+//	0x8154 R Point1 触摸点 1，触摸面积低 8 位
+//	0x8155 R Point1 触摸点 1，触摸面积高 8 位
+//	*/
+//  
+//	g_GT911.TouchpointFlag = buf[0];
+//	g_GT911.Touchkey1trackid = buf[1];
+//	g_GT911.X1 = ((unsigned short)buf[3] << 8) + buf[2];
+//	g_GT911.Y1 = ((unsigned short)buf[5] << 8) + buf[4];
+//	g_GT911.S1 = ((unsigned short)buf[7] << 8) + buf[6];
+//	/* 检测按下 */
+//	//if (s_tp_down == 0)
+//	//{
+//	//	s_tp_down = 1;
+//	//	State.x = g_GT911.X1;
+//	//	State.y = g_GT911.Y1;
+//	//	State.Pressed = 1;
+//	//	GUI_PID_StoreState(&State);
+//	//}
+//	//else
+//	//{
+//	//	State.x = g_GT911.X1;
+//	//	State.y = g_GT911.Y1;
+//	//	State.Pressed = 1;
+//	//	GUI_PID_StoreState(&State);
+//	//}
+//  #ifdef LCD_SIZE_10CH_TOUCH
+//   page_touch_pro(1024-g_GT911.X1,g_GT911.Y1);
+//  #else 
+//   //page_touch_pro(g_GT911.X1,g_GT911.Y1);//方形屏
+//	// page_touch_pro(1024-g_GT911.X1,g_GT911.Y1);
+//	// page_touch_pro(((1320-g_GT911.Y1)*1024)/1320,((g_GT911.X1)*600)/720);
+//	//page_touch_pro(((g_GT911.X1)*600)/800,((g_GT911.Y1)*1024)/1280);//10.1 1280*800
+//	 page_touch_pro(g_GT911.X1,g_GT911.Y1);//all ew
+//	#endif
+//		
+//   if((g_GT911.X1!=0x0000)&&(g_GT911.X1!=0xFFFF)&&(g_GT911.Y1!=0x0000)&&(g_GT911.Y1!=0xFFFF))
+//	 {
+//		 // touch_up = TRUE;
+//	    if(touch_up)
+//			{
+//					
+//						
+//			}
+//			touch_up = FALSE;
+//	 }
+//	 else if(((g_GT911.X1==0x0000)||(g_GT911.X1==0xFFFF))&&((g_GT911.Y1==0x0000)||(g_GT911.Y1==0xFFFF)))
+//	 {
+//	   touch_up = TRUE;
+//	 }
+
+//     
+
+//    
+//     HandleColorTouch();////RGB灯页取色函数
+//     
+//	#if 0
+//	sysprintf("X1:%5d,Y1:%5d,S1:%3d\r\n", g_GT911.X1, g_GT911.Y1, g_GT911.S1); //串口打印坐标值
+//	#endif
+//	
+//	g_GT911.X1=0;
+//	g_GT911.Y1=0;
+//	g_GT911.S1=0;
+//	return 0;
+//}
+
+
+
+
+
+/**********************************************************************************************************
+*函 数 名: GT911_Scan
+*	功能说明: 读取GT911触摸数据。读取全部的数据。
+*	形 参: 无
+*	返 回 值: 无
+*********************************************************************************************************/
+void GT911_Scan(void)
+{
+	unsigned char  buf[40];
+	unsigned char  Clearbuf = 0;
+	unsigned char  i;
+//	static unsigned char  s_tp_down = 0;
+	if (g_GT911.Enable == 0)
+	{
+		return;
+	}
+
+	GT911_ReadReg(GT911_READ_XY_REG, buf, 1);
+	if ((buf[0] & 0x0F) == 0)
+	{
+		//touch release
+		GT911_WriteReg(GT911_CLEARBUF_REG, (unsigned char  *)&Clearbuf, 1);
+		return;
+	}
+	GT911_ReadReg(GT911_READ_XY_REG+1, &buf[1], 39);
+	GT911_WriteReg(GT911_CLEARBUF_REG, (unsigned char  *)&Clearbuf, 1);
+	/*
+	0x814E R/W Bufferstatus Large_Detect number of touch points
+	0x814F R Point1 track id
+	0x8150 R Point1Xl 触摸点 1，X 坐标低 8 位
+	0x8151 R Point1Xh 触摸点 1，X 坐标高 8 位
+	0x8152 R Point1Yl 触摸点 1，Y 坐标低 8 位
+	0x8153 R Point1Yh 触摸点 1，Y 坐标高 8 位
+	0x8154 R Point1 触摸点 1，触摸面积低 8 位
+	0x8155 R Point1 触摸点 1，触摸面积高 8 位
+	0x8157 R Point2 track id
+	0x8158 R Point2Xl 触摸点 2，X 坐标低 8 位
+	0x8159 R Point2Xh 触摸点 2，X 坐标高 8 位
+	0x815A R Point2Yl 触摸点 2，Y 坐标低 8 位
+	0x815B R Point2Yh 触摸点 2，Y 坐标高 8 位
+	0x815C R Point2 触摸点 2，触摸面积低 8 位
+	0x815D R Point2 触摸点 2，触摸面积高 8 位
+	0x815F R Point3 track id
+	0x8160 R Point3Xl 触摸点 3，X 坐标低 8 位
+	0x8161 R Point3Xh 触摸点 3，X 坐标高 8 位
+	0x8162 R Point3Yl 触摸点 3，Y 坐标低 8 位
+	0x8163 R Point3Yh 触摸点 3，Y 坐标高 8 位
+	0x8164 R Point3 触摸点 3，触摸面积低 8 位
+	0x8165 R Point3 触摸点 3，触摸面积高 8 位
+	0x8167 R Point4 track id
+	0x8168 R Point4Xl 触摸点 4，X 坐标低 8 位
+	0x8169 R Point4Xh 触摸点 4，X 坐标高 8 位
+	0x816A R Point4Yl 触摸点 4，Y 坐标低 8 位
+	0x816B R Point4Yh 触摸点 4，Y 坐标高 8 位
+	0x816C R Point4 触摸点 4，触摸面积低 8 位
+	0x816D R Point4 触摸点 4，触摸面积高 8 位
+	0x816F R Point5 track id
+	0x8170 R Point5Xl 触摸点 5，X 坐标低 8 位
+	0x8171 R Point5Xh 触摸点 5，X 坐标高 8 位
+	0x8172 R Point5Yl 触摸点 5，Y 坐标低 8 位
+	0x8173 R Point5Yh 触摸点 5，Y 坐标高 8 位
+	0x8174 R Point5 触摸点 5，触摸面积低 8 位
+	0x8175 R Point5 触摸点 5，触摸面积高 8 位
+	*/
+	g_GT911.TouchpointFlag = buf[0];
+
+	g_GT911.Touchkey1trackid = buf[1];
+	g_GT911.X1 = ((unsigned short)buf[3] << 8) + buf[2];
+	g_GT911.Y1 = ((unsigned short)buf[5] << 8) + buf[4];
+	g_GT911.S1 = ((unsigned short)buf[7] << 8) + buf[6];
+
+	g_GT911.Touchkey2trackid = buf[9];
+	g_GT911.X2 = ((unsigned short)buf[11] << 8) + buf[10];
+	g_GT911.Y2 = ((unsigned short)buf[13] << 8) + buf[12];
+	g_GT911.S2 = ((unsigned short)buf[15] << 8) + buf[14];
+
+	g_GT911.Touchkey3trackid = buf[17];
+	g_GT911.X3 = ((unsigned short)buf[19] << 8) + buf[18];
+	g_GT911.Y3 = ((unsigned short)buf[21] << 8) + buf[20];
+	g_GT911.S3 = ((unsigned short)buf[23] << 8) + buf[22];
+
+	g_GT911.Touchkey4trackid = buf[25];
+	g_GT911.X4 = ((unsigned short)buf[27] << 8) + buf[26];
+	g_GT911.Y4 = ((unsigned short)buf[29] << 8) + buf[28];
+	g_GT911.S4 = ((unsigned short)buf[31] << 8) + buf[30];
+
+	g_GT911.Touchkey5trackid = buf[33];
+	g_GT911.X5 = ((unsigned short)buf[35] << 8) + buf[34];
+	g_GT911.Y5 = ((unsigned short)buf[37] << 8) + buf[36];
+	g_GT911.S5 = ((unsigned short)buf[39] << 8) + buf[38];
+
+//if (s_tp_down == 0)
+//{
+//	s_tp_down = 1;
+//	//touch down
+//}
+//else
+//{
+////touch move
+//}
+	#if 1
+	for (i = 0; i < 34; i++)
+	{
+		sysprintf("%02X ", buf[i]);
+	}
+	sysprintf("\r\n");
+	sysprintf("(%5d,%5d,%3d) ", g_GT911.X1, g_GT911.Y1, g_GT911.S1);
+	sysprintf("(%5d,%5d,%3d) ", g_GT911.X2, g_GT911.Y2, g_GT911.S2);
+	sysprintf("(%5d,%5d,%3d) ", g_GT911.X3, g_GT911.Y3, g_GT911.S3);
+	sysprintf("(%5d,%5d,%3d) ", g_GT911.X4, g_GT911.Y4, g_GT911.S4);
+	sysprintf("(%5d,%5d,%3d) ", g_GT911.X5, g_GT911.Y5, g_GT911.S5);
+	sysprintf("\r\n");
+	#endif
+}
+
+/**********************************************************************************************************
+*	函 数 名: GT911_ReadProductID
+*	功能说明: 识别显示模块类别。读取GT911 ProductID。
+*	形 参: 无
+*	返 回 值: 显示模块类别
+**********************************************************************************************************/
+unsigned int GT911_ReadProductID(void)
+{
+unsigned char  buf[4];
+unsigned int value = 0;
+/* Product_ID*/
+GT911_ReadReg(GT911_PRODUCT_ID_REG, buf, 4);
+value = ((unsigned int)buf[3]<<24)+((unsigned int)buf[2]<<16)+((unsigned int)buf[1]<<8)+buf[0];
+return value;
+}
+/*
+*	函 数 名: GT911_IIC_Init
+*	功能说明: IIC初始化
+*	形 参: 无
+*	返 回 值: 1成功 -1失败
+*/
+int GT911_IIC_Init(void)
+{
+	if(IO_IIC==1)  //软件IIC
+	{
+		IO_I2C_Init();    //初始化IIC  都拉至高  
+		IO_set_slave_addr(GT911_I2C_ADDR>>1);   //写入从机地址， 这里地址要改动
+	}		
+	else    //硬件IIC
+	{		
+		I2C_Init(TWI0);
+		set_slave_addr(GT911_I2C_ADDR>>1);
+	}
+  sysprintf("I2C_Init_OK... \r\n");	
+	return 1;
+}
+/*
+*	函 数 名: GT911_Init
+*	功能说明: GT911初始化
+*	形 参: 无
+*	返 回 值: 1成功 -1失败
+*/
+int GT911_Init(void)
+{
+	sysprintf("GT911_Init... \r\n");	
+  GT911_IIC_Init();   //初始化IIC，写入通讯地址
+	GT911_RST_INT_GPIO_Init();  //复位键和中断IO初始化
+	GT911_InitHard();
+	sysprintf("GT911_Init OK... \r\n");		
+	return 1;
+}
+
+/*GT911_Test
+*/
+void GT911_Test(void)
+{
+	unsigned char buf[256];//,i;
+	sysprintf("GT911_Test...\r\n");
+	/*InitGT911*/
+  GT911_Init();
+
+	
+	GT911_ReadReg(0x8100,buf, 1);
+	sysprintf("A[%x]...\r\n ",buf[0]);
+	GT911_ReadReg(0x8048,buf, 6);
+	sysprintf("A1[%x]...\r\n ",buf[0]);
+	sysprintf("A2[%x]...\r\n ",buf[1]);
+	sysprintf("A3[%x]...\r\n ",buf[2]);	
+	sysprintf("A4[%x]...\r\n ",buf[3]);	
+	sysprintf("A5[%x]...\r\n ",buf[4]);
+	sysprintf("A6[%x]...\r\n ",buf[5]);
+  sysprintf("Ver[%x]...\r\n ",GT911_ReadFirmwareVersion());	
+
+}

@@ -1,55 +1,29 @@
-# Prerequisites
-*.d
-
-# Object files
+# 编译产物
 *.o
-*.ko
 *.obj
 *.elf
-
-# Linker output
-*.ilk
 *.map
-*.exp
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
-
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
-
-# Executables
-*.exe
-*.out
-*.app
-*.i*86
-*.x86_64
+*.bin
 *.hex
+*.axf
+*.lst
+*.out
 
-# Debug files
-*.dSYM/
+# 中间文件
+*.d
 *.su
-*.idb
-*.pdb
+*.bak
+*.tmp
 
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
+# IDE / 工具链
+.vscode/
+.idea/
+.settings/
+.cproject
+.project
+/project/lst
+/project/obj
+/project/sunxi-tools-烧录
 
-# debug information files
-*.dwo
+#图片文件
+#/USR/ui_data
